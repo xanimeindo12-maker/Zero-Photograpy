@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Galeri Foto Acara</title>
+    <style>
+        /* Desain Dasar */
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; background-color: #f8f9fa; }
+        header { background-color: #111; color: white; padding: 20px; text-align: center; }
+        
+        /* Grid Galeri Masonry */
+        .gallery-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; padding: 30px; max-width: 1200px; margin: auto; }
+        .photo-card { background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1); position: relative; text-align: center; padding-bottom: 15px; }
+        
+        /* Gambar & Watermark */
+        .image-wrapper { position: relative; }
+        .photo-card img { width: 100%; height: auto; display: block; filter: brightness(0.9); }
+        .watermark { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: rgba(255, 255, 255, 0.7); font-size: 24px; font-weight: bold; pointer-events: none; user-select: none; text-shadow: 2px 2px 4px rgba(0,0,0,0.5); border: 2px solid rgba(255,255,255,0.5); padding: 5px 15px; border-radius: 5px;}
+        
+        /* Info & Tombol */
+        .photo-info { padding: 15px 10px 5px; font-weight: bold; color: #333; }
+        .photo-price { color: #28a745; font-size: 18px; margin-bottom: 15px; }
+        .btn-buy { background-color: #007bff; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-weight: bold; transition: 0.3s; }
+        .btn-buy:hover { background-color: #0056b3; }
+        .btn-buy:disabled { background-color: #ccc; cursor: not-allowed; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Portal Foto Premium</h1>
+        <p>Temukan dan beli foto resolusi tinggi Anda di sini</p>
+    </header>
+
+    <div class="gallery-container">
+        <div class="photo-card">
+            <div class="image-wrapper">
+                <img src="https://images.unsplash.com/photo-1511556820780-d912e42b4980?w=500&q=80" alt="Foto Event">
+                <div class="watermark">PREVIEW</div>
+            </div>
+            <div class="photo-info">Kode: EVT-001</div>
+            <div class="photo-price">Rp 25.000</div>
+            <button class="btn-buy" onclick="beliFoto('EVT-001', 25000, this)">Beli Foto Ini</button>
+        </div>
+
+        <div class="photo-card">
+            <div class="image-wrapper">
+                <img src="https://images.unsplash.com/photo-1540039155732-d674d096c8d5?w=500&q=80" alt="Foto Event">
+                <div class="watermark">PREVIEW</div>
+            </div>
+            <div class="photo-info">Kode: EVT-002</div>
+            <div class="photo-price">Rp 25.000</div>
+            <button class="btn-buy" onclick="beliFoto('EVT-002', 25000, this)">Beli Foto Ini</button>
+        </div>
+    </div>
+
+    <script>
+        // GANTI URL DI BAWAH INI DENGAN URL WEB APP GOOGLE APPS SCRIPT ANDA
+        const APPS_SCRIPT_URL = 'MASUKKAN_URL_WEB_APP_ANDA_DISINI';
+
+        function beliFoto(idFoto, harga, buttonElement) {
+            // Ubah tombol jadi loading
+            buttonElement.innerText = "Memproses...";
+            buttonElement.disabled = true;
+
+            // Data yang dikirim ke Backend
+            const dataPesanan = {
+                action: "beli_foto",
+                id_foto: idFoto,
+                harga: harga
+            };
+
+            // Mengirim request ke Google Apps Script
+            fetch(APPS_SCRIPT_URL, {
+                method: 'POST',
+                // Gunakan text/plain untuk menghindari error CORS Preflight dari browser
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify(dataPesanan)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if(data.status === "success") {
+                    alert("Pesanan berhasil dicatat!\nID Transaksi: " + data.id_transaksi);
+                    // Nanti kita arahkan ke halaman QRIS, sementara buka link dummy
+                    window.open(data.link_bayar, '_blank');
+                } else {
+                    alert("Gagal mencatat pesanan.");
+                }
+                // Kembalikan tombol ke semula
+                buttonElement.innerText = "Beli Foto Ini";
+                buttonElement.disabled = false;
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert("Terjadi kesalahan koneksi.");
+                buttonElement.innerText = "Beli Foto Ini";
+                buttonElement.disabled = false;
+            });
+        }
+    </script>
+</body>
+</html>
