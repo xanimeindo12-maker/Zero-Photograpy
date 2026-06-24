@@ -1,213 +1,104 @@
-<!DOCTYPE html>
-<html lang="id">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ZERO | Portal Photograpy Premium</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
-    <style>
-        /* ================= DESAIN GLOBAL ================= */
-        :root {
-            --primary: #0d6efd;
-            --primary-hover: #0b5ed7;
-            --dark: #1f2937;
-            --light: #f3f4f6;
-            --white: #ffffff;
-            --text-muted: #6b7280;
-        }
-        
-        * { box-sizing: border-box; }
-        body { font-family: 'Inter', sans-serif; margin: 0; padding: 0; background-color: var(--light); color: var(--dark); overflow-x: hidden; }
-        
-        /* ================= NAVIGASI ================= */
-        nav { background-color: var(--white); padding: 20px 60px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); position: sticky; top: 0; z-index: 50; }
-        .logo { font-size: 26px; font-weight: 800; color: var(--primary); letter-spacing: 1px; }
-        .nav-links a { margin-left: 30px; text-decoration: none; color: var(--dark); font-weight: 600; font-size: 14px; transition: color 0.3s; }
-        .nav-links a:hover { color: var(--primary); }
+// Script Code.gs untuk Backend Website Foto (Versi Keamanan OTP Gmail)
 
-        /* ================= HERO SECTION ================= */
-        .hero { display: flex; align-items: center; justify-content: space-between; padding: 100px 60px; background: linear-gradient(135deg, #ffffff 40%, #e0f2fe 100%); }
-        .hero-text { max-width: 50%; }
-        .hero-tag { display: inline-block; background: #dbeafe; color: var(--primary); padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 20px; }
-        .hero-text h1 { font-size: 52px; line-height: 1.1; margin: 0 0 20px; font-weight: 800; color: #111827; }
-        .hero-text p { font-size: 18px; color: var(--text-muted); line-height: 1.6; margin-bottom: 30px; }
-        
-        .hero-images { position: relative; width: 45%; height: 450px; }
-        .polaroid { background: var(--white); padding: 12px 12px 50px 12px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); position: absolute; border-radius: 8px; transition: transform 0.4s ease; }
-        .polaroid:hover { transform: translateY(-10px) scale(1.05) !important; z-index: 10; }
-        .polaroid img { width: 280px; height: 350px; object-fit: cover; border-radius: 4px; }
-        .p1 { transform: rotate(-6deg); z-index: 2; top: 0; left: 0; }
-        .p2 { transform: rotate(8deg); z-index: 1; top: 40px; right: 20px; }
+function doPost(e) {
+  if (typeof e !== 'undefined' && e.postData && e.postData.contents) {
+    var data = JSON.parse(e.postData.contents);
+    
+    if (data.action === "beli_foto") {
+      return catatPesanan(data);
+    } else if (data.action === "request_otp") {
+      return kirimOTP();
+    } else if (data.action === "upload_foto") {
+      return uploadFotoKeDrive(data);
+    }
+  }
+  return ContentService.createTextOutput("Error: Permintaan Tidak Valid");
+}
 
-        /* ================= GALLERY SECTION ================= */
-        .section-title { text-align: center; padding: 80px 20px 40px; }
-        .section-title h2 { font-size: 38px; margin: 0 0 15px; font-weight: 800; }
-        .section-title p { color: var(--text-muted); max-width: 600px; margin: 0 auto; font-size: 16px; }
+// ================= FUNGSI 1: KIRIM OTP KE GMAIL =================
+function kirimOTP() {
+  // Sistem otomatis mendeteksi email Google yang Anda gunakan untuk membuat script ini
+  var adminEmail = Session.getEffectiveUser().getEmail(); 
+  
+  // Membuat 6 digit angka acak
+  var otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+  
+  // Menyimpan OTP di memori sementara (Cache) selama 1 jam (3600 detik)
+  var cache = CacheService.getScriptCache();
+  cache.put("ADMIN_OTP", otpCode, 3600);
+  
+  // Mengirim Email
+  var subject = "🔒 Kode Akses Dashboard Fotoyu";
+  var body = "Halo Admin,\n\n" +
+             "Seseorang sedang mencoba masuk ke Dashboard Fotoyu.\n" +
+             "Jika ini Anda, silakan gunakan kode rahasia berikut:\n\n" +
+             "Kode Akses: " + otpCode + "\n\n" +
+             "Kode ini hanya berlaku selama 1 jam.\n\n" +
+             "Sistem Keamanan Fotoyu.";
+             
+  MailApp.sendEmail(adminEmail, subject, body);
+  
+  return ContentService.createTextOutput(JSON.stringify({
+    "status": "success", "pesan": "Kode OTP telah dikirim ke email Anda!"
+  })).setMimeType(ContentService.MimeType.JSON);
+}
 
-        .gallery-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 40px; padding: 0 60px 100px; max-width: 1300px; margin: auto; }
-        
-        .photo-card { background: var(--white); border-radius: 16px; overflow: hidden; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.05); transition: all 0.3s ease; display: flex; flex-direction: column; border: 1px solid #f3f4f6; }
-        .photo-card:hover { transform: translateY(-8px); box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); }
-        
-        .image-wrapper { position: relative; height: 280px; overflow: hidden; background: #000; }
-        .image-wrapper img { width: 100%; height: 100%; object-fit: cover; opacity: 0.85; transition: transform 0.5s ease, opacity 0.3s; }
-        .photo-card:hover .image-wrapper img { transform: scale(1.08); opacity: 1; }
-        
-        .watermark { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: rgba(255, 255, 255, 0.7); font-size: 24px; font-weight: 800; letter-spacing: 4px; pointer-events: none; border: 3px solid rgba(255,255,255,0.5); padding: 10px 25px; border-radius: 8px; backdrop-filter: blur(2px); }
-        .category-badge { position: absolute; bottom: 15px; left: 15px; background: rgba(255, 255, 255, 0.9); color: var(--dark); padding: 6px 12px; font-size: 12px; font-weight: 800; border-radius: 6px; letter-spacing: 1px; }
+// ================= FUNGSI 2: UPLOAD FOTO (Validasi OTP) =================
+function uploadFotoKeDrive(data) {
+  var cache = CacheService.getScriptCache();
+  var validOtp = cache.get("ADMIN_OTP");
+  
+  // Validasi Keamanan Lapis Baja
+  if (!validOtp || validOtp !== data.otp) {
+    return ContentService.createTextOutput(JSON.stringify({
+      "status": "error", "pesan": "Akses Ditolak: Kode OTP Salah atau Sudah Kedaluwarsa!"
+    })).setMimeType(ContentService.MimeType.JSON);
+  }
 
-        .photo-info-box { padding: 25px; display: flex; flex-direction: column; justify-content: space-between; flex-grow: 1; }
-        .photo-title { font-size: 20px; font-weight: 800; margin: 0 0 8px; color: var(--dark); }
-        .photo-price { color: var(--primary); font-size: 22px; font-weight: 800; margin-bottom: 25px; }
-        
-        .btn-buy { background-color: var(--primary); color: var(--white); border: none; padding: 14px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 15px; transition: all 0.3s; width: 100%; display: flex; justify-content: center; align-items: center; gap: 8px; }
-        .btn-buy:hover { background-color: var(--primary-hover); transform: translateY(-2px); }
-        .btn-buy:disabled { background-color: #cbd5e1; cursor: not-allowed; transform: none; }
+  try {
+    // PASTIKAN ID FOLDER INI SUDAH DIISI DENGAN ID MILIK ANDA
+    var FOLDER_ID = "MASUKKAN_ID_FOLDER_ANDA_DISINI"; 
+    var folder = DriveApp.getFolderById(FOLDER_ID);
+    
+    var contentType = data.mimeType;
+    var byteCharacters = Utilities.base64Decode(data.fileData);
+    var blob = Utilities.newBlob(byteCharacters, contentType, data.nama_file);
+    
+    folder.createFile(blob);
+    
+    return ContentService.createTextOutput(JSON.stringify({
+      "status": "success", "pesan": "Foto " + data.nama_file + " berhasil diunggah!"
+    })).setMimeType(ContentService.MimeType.JSON);
+    
+  } catch (error) {
+    return ContentService.createTextOutput(JSON.stringify({
+      "status": "error", "pesan": "Gagal upload: " + error.message
+    })).setMimeType(ContentService.MimeType.JSON);
+  }
+}
 
-        /* ================= FOOTER ================= */
-        footer { background: var(--white); padding: 40px; text-align: center; color: var(--text-muted); border-top: 1px solid #e5e7eb; margin-top: auto; }
-
-        /* ================= RESPONSIVE ================= */
-        @media (max-width: 900px) {
-            .hero { flex-direction: column; padding: 60px 30px; text-align: center; }
-            .hero-text { max-width: 100%; margin-bottom: 50px; }
-            .hero-images { width: 100%; height: auto; display: flex; justify-content: center; gap: 20px; }
-            .polaroid { position: static; transform: none !important; padding: 8px 8px 30px 8px; }
-            .polaroid img { width: 160px; height: 200px; }
-            nav { padding: 15px 30px; }
-            .gallery-container { padding: 0 30px 60px; grid-template-columns: 1fr; }
-        }
-    </style>
-</head>
-<body>
-
-    <nav>
-        <div class="logo">FOTOYU</div>
-        <div class="nav-links">
-            <a href="#">Service</a>
-            <a href="#">Price List</a>
-            <a href="#">Contact</a>
-        </div>
-    </nav>
-
-    <section class="hero">
-        <div class="hero-text">
-            <span class="hero-tag">Platform Foto Cerdas</span>
-            <h1>Abadikan & Miliki Momen Terbaik Anda.</h1>
-            <p>Sistem cerdas untuk mencari, memilih, dan mengunduh foto beresolusi tinggi milik Anda secara instan. Langsung masuk ke perangkat Anda dengan aman.</p>
-        </div>
-        <div class="hero-images">
-            <div class="polaroid p1">
-                <img src="https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=500&q=80" alt="Kamera">
-            </div>
-            <div class="polaroid p2">
-                <img src="https://images.unsplash.com/photo-1554048612-b6a482bc67e5?w=500&q=80" alt="Fotografer">
-            </div>
-        </div>
-    </section>
-
-    <section class="section-title">
-        <h2>Galeri Terbaru</h2>
-        <p>Temukan foto Anda dari event yang kami liput. Lakukan pembayaran instan, dan dapatkan file orisinal tanpa watermark.</p>
-    </section>
-
-    <div class="gallery-container">
-        
-        <div class="photo-card">
-            <div class="image-wrapper">
-                <img src="https://images.unsplash.com/photo-1511556820780-d912e42b4980?w=500&q=80" alt="Wedding">
-                <div class="watermark">PREVIEW</div>
-                <div class="category-badge">WEDDING</div>
-            </div>
-            <div class="photo-info-box">
-                <div>
-                    <h3 class="photo-title">Resepsi Adat Jakarta</h3>
-                    <div class="photo-price">Rp 25.000</div>
-                </div>
-                <button class="btn-buy" onclick="beliFoto('WDG-JKT-001', 25000, this)">
-                    Beli Foto Asli
-                </button>
-            </div>
-        </div>
-
-        <div class="photo-card">
-            <div class="image-wrapper">
-                <img src="https://images.unsplash.com/photo-1540039155732-d674d096c8d5?w=500&q=80" alt="Graduation">
-                <div class="watermark">PREVIEW</div>
-                <div class="category-badge">GRADUATION</div>
-            </div>
-            <div class="photo-info-box">
-                <div>
-                    <h3 class="photo-title">Wisuda Universitas</h3>
-                    <div class="photo-price">Rp 30.000</div>
-                </div>
-                <button class="btn-buy" onclick="beliFoto('GRD-UNV-012', 30000, this)">
-                    Beli Foto Asli
-                </button>
-            </div>
-        </div>
-
-        <div class="photo-card">
-            <div class="image-wrapper">
-                <img src="https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=500&q=80" alt="Concert">
-                <div class="watermark">PREVIEW</div>
-                <div class="category-badge">CONCERT</div>
-            </div>
-            <div class="photo-info-box">
-                <div>
-                    <h3 class="photo-title">Festival Musik Tahunan</h3>
-                    <div class="photo-price">Rp 35.000</div>
-                </div>
-                <button class="btn-buy" onclick="beliFoto('FST-MSK-044', 35000, this)">
-                    Beli Foto Asli
-                </button>
-            </div>
-        </div>
-
-    </div>
-
-    <footer>
-        &copy; 2026 Fotoyu. Hak Cipta Dilindungi. Sistem dikelola dengan aman.
-    </footer>
-
-    <script>
-        // MASUKKAN URL APPS SCRIPT ANDA DI ANTARA TANDA KUTIP DI BAWAH INI
-        const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwxl4bhW9G3pak60MIPOVI6nVrgREAS4VVj5cn5ZyQdu5WQuoBpuJlrah4Q24VWqA-s3g/exec';
-
-        function beliFoto(idFoto, harga, buttonElement) {
-            const originalText = buttonElement.innerHTML;
-            buttonElement.innerHTML = "Memproses...";
-            buttonElement.disabled = true;
-
-            const dataPesanan = {
-                action: "beli_foto",
-                id_foto: idFoto,
-                harga: harga
-            };
-
-            fetch(APPS_SCRIPT_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                body: JSON.stringify(dataPesanan)
-            })
-            .then(response => response.json())
-            .then(data => {
-                if(data.status === "success") {
-                    alert("Pesanan Anda tercatat!\nID Transaksi: " + data.id_transaksi + "\n\nMenuju halaman pembayaran...");
-                    window.open(data.link_bayar, '_blank');
-                } else {
-                    alert("Maaf, gagal mencatat pesanan.");
-                }
-                buttonElement.innerHTML = originalText;
-                buttonElement.disabled = false;
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert("Gagal terhubung ke server. Periksa koneksi internet Anda.");
-                buttonElement.innerHTML = originalText;
-                buttonElement.disabled = false;
-            });
-        }
-    </script>
-</body>
-</html>
+// ================= FUNGSI 3: BELI FOTO (Tetap Sama) =================
+function catatPesanan(data) {
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Sheet1");
+  var waktu = new Date();
+  var idTransaksi = "TRX-" + Math.floor(100000 + Math.random() * 900000);
+  var idFoto = data.id_foto;
+  var nominal = data.harga;
+  var status = "Pending";
+  
+  var FOLDER_ID = "1YNZNmu1ISKdmFQt-SN8SCdhM5c0Pq1NQ"; // Isi ID Folder Anda
+  var linkDownload = "File tidak ditemukan";
+  
+  try {
+    var folder = DriveApp.getFolderById(FOLDER_ID);
+    var files = folder.searchFiles('title contains "' + idFoto + '"');
+    if (files.hasNext()) { linkDownload = files.next().getUrl(); }
+  } catch(error) { linkDownload = "Error Akses Drive"; }
+  
+  sheet.appendRow([waktu, idTransaksi, idFoto, nominal, status, linkDownload]);
+  
+  var response = {
+    "status": "success", "id_transaksi": idTransaksi, "link_bayar": "https://simulator.sandbox.midtrans.com/" 
+  };
+  return ContentService.createTextOutput(JSON.stringify(response)).setMimeType(ContentService.MimeType.JSON);
+}
