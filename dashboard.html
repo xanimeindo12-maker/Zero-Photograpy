@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Admin | Zeroku</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        /* ================= DESAIN GLOBAL ================= */
+        :root {
+            --primary: #0f172a;
+            --accent: #3b82f6;
+            --accent-hover: #2563eb;
+            --bg: #f8fafc;
+            --surface: #ffffff;
+            --text: #334155;
+            --border: #e2e8f0;
+        }
+        
+        body { font-family: 'Inter', sans-serif; background-color: var(--bg); display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 20px; color: var(--text); }
+        
+        .card { background: var(--surface); padding: 40px; border-radius: 16px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05), 0 8px 10px -6px rgba(0,0,0,0.01); width: 100%; max-width: 450px; text-align: left; border: 1px solid var(--border); transition: all 0.3s ease; }
+        
+        .header { text-align: center; margin-bottom: 30px; }
+        .logo { font-size: 24px; font-weight: 700; color: var(--primary); letter-spacing: 2px; margin-bottom: 10px; }
+        h2 { margin: 0 0 8px; font-size: 20px; color: var(--primary); }
+        p { color: #64748b; font-size: 14px; margin: 0; line-height: 1.5; }
+
+        /* ================= FORM ELEMENTS ================= */
+        .form-group { margin-bottom: 20px; }
+        label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 8px; color: var(--primary); }
+        
+        input[type="password"], input[type="text"] { width: 100%; padding: 14px 16px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; transition: border-color 0.2s, box-shadow 0.2s; background-color: #f8fafc; box-sizing: border-box; }
+        input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); background-color: var(--surface); }
+        
+        /* Custom File Upload Styling */
+        .file-upload-wrapper { position: relative; width: 100%; height: 120px; border: 2px dashed var(--border); border-radius: 8px; display: flex; justify-content: center; align-items: center; background-color: #f8fafc; cursor: pointer; transition: all 0.2s; margin-bottom: 20px; }
+        .file-upload-wrapper:hover { border-color: var(--accent); background-color: #eff6ff; }
+        .file-upload-wrapper input[type="file"] { position: absolute; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
+        .file-upload-text { text-align: center; color: #64748b; font-size: 13px; pointer-events: none; }
+        .file-upload-text span { display: block; font-weight: 600; color: var(--accent); font-size: 14px; margin-bottom: 4px; }
+
+        /* ================= BUTTONS ================= */
+        button { width: 100%; background-color: var(--primary); color: white; padding: 14px; border: none; border-radius: 8px; font-weight: 600; font-size: 14px; cursor: pointer; transition: all 0.2s; letter-spacing: 0.5px; }
+        button:hover { background-color: #000000; transform: translateY(-1px); }
+        button.btn-upload { background-color: var(--accent); }
+        button.btn-upload:hover { background-color: var(--accent-hover); }
+        button:disabled { background-color: #94a3b8; cursor: not-allowed; transform: none; }
+
+        .hidden { display: none; }
+        .status-badge { text-align: center; margin-top: 15px; font-size: 13px; font-weight: 500; color: var(--accent); }
+        
+        /* Animasi Transisi Halus */
+        .fade-in { animation: fadeIn 0.4s ease-in-out forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body>
+
+    <div id="login-section" class="card fade-in">
+        <div class="header">
+            <div class="logo">ZERO</div>
+            <h2>Portal Admin</h2>
+            <p>Masukkan kredensial keamanan Anda untuk mengakses panel server.</p>
+        </div>
+        
+        <div class="form-group">
+            <label for="admin-password">Password Master</label>
+            <input type="password" id="admin-password" placeholder="••••••••" autocomplete="off">
+        </div>
+        
+        <button onclick="cekLogin()">Otorisasi Akses</button>
+    </div>
+
+    <div id="upload-section" class="card hidden">
+        <div class="header">
+            <div class="logo">ZERO</div>
+            <h2>Database Cloud</h2>
+            <p>Sinkronisasi foto asli ke Google Drive.</p>
+        </div>
+        
+        <div class="form-group">
+            <label for="foto-kode">ID / Kode Foto (Sesuai Website)</label>
+            <input type="text" id="foto-kode" placeholder="Misal: WDG-JKT-001">
+        </div>
+
+        <label>Pilih File Resolusi Tinggi</label>
+        <div class="file-upload-wrapper">
+            <input type="file" id="foto-file" accept="image/jpeg, image/png" onchange="updateFileName(this)">
+            <div class="file-upload-text" id="file-label">
+                <span>Klik atau Tarik File ke Sini</span>
+                Maksimal ukuran disarankan: 5MB
+            </div>
+        </div>
+        
+        <button id="btn-upload" class="btn-upload" onclick="prosesUpload()">Upload ke Server</button>
+        <div id="status-text" class="status-badge"></div>
+    </div>
+
+    <script>
+        // MASUKKAN URL APPS SCRIPT ANDA DI ANTARA TANDA KUTIP DI BAWAH INI
+        const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwxl4bhW9G3pak60MIPOVI6nVrgREAS4VVj5cn5ZyQdu5WQuoBpuJlrah4Q24VWqA-s3g/exec';
+        let savedPassword = '';
+
+        // Deteksi Perubahan Nama File pada UI
+        function updateFileName(input) {
+            const label = document.getElementById('file-label');
+            if (input.files && input.files[0]) {
+                label.innerHTML = `<span style="color: #10b981;">File Terpilih:</span> ${input.files[0].name}`;
+            } else {
+                label.innerHTML = `<span>Klik atau Tarik File ke Sini</span>Maksimal ukuran disarankan: 5MB`;
+            }
+        }
+
+        // Beralih dari Login ke Upload
+        function cekLogin() {
+            const pwd = document.getElementById('admin-password').value;
+            if(pwd.trim() === "") {
+                alert("Akses ditolak: Kredensial tidak boleh kosong.");
+                return;
+            }
+            savedPassword = pwd; 
+            document.getElementById('login-section').classList.add('hidden');
+            
+            const uploadSection = document.getElementById('upload-section');
+            uploadSection.classList.remove('hidden');
+            uploadSection.classList.add('fade-in');
+        }
+
+        // Logika Eksekusi Upload File
+        function prosesUpload() {
+            const kodeFoto = document.getElementById('foto-kode').value.trim();
+            const fileInput = document.getElementById('foto-file').files[0];
+            const btnUpload = document.getElementById('btn-upload');
+            const statusText = document.getElementById('status-text');
+
+            if(!kodeFoto || !fileInput) {
+                alert("Form tidak lengkap. Harap isi ID Foto dan pilih file.");
+                return;
+            }
+
+            // Ubah UI menjadi Loading State
+            btnUpload.disabled = true;
+            btnUpload.innerText = "Mengenkripsi & Mengunggah...";
+            statusText.style.color = "#3b82f6";
+            statusText.innerText = "Sistem sedang membaca file, mohon jangan tutup halaman...";
+
+            // Konversi File ke Base64 (Syarat kirim data via API HTML statis)
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const base64Data = e.target.result.split(',')[1]; 
+
+                const dataKirim = {
+                    action: "upload_foto",
+                    password: savedPassword,
+                    nama_file: kodeFoto + ".jpg",
+                    mimeType: fileInput.type,
+                    fileData: base64Data
+                };
+
+                statusText.innerText = "Menjalankan sinkronisasi ke Google Drive...";
+
+                // Tembak Data ke Google Apps Script
+                fetch(APPS_SCRIPT_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify(dataKirim)
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if(data.status === "success") {
+                        statusText.style.color = "#10b981"; // Hijau Success
+                        statusText.innerText = "Upload Berhasil!";
+                        alert(data.pesan);
+                        
+                        // Reset Form setelah sukses
+                        document.getElementById('foto-kode').value = '';
+                        document.getElementById('foto-file').value = '';
+                        updateFileName(document.getElementById('foto-file'));
+                    } else {
+                        statusText.style.color = "#ef4444"; // Merah Error
+                        statusText.innerText = "Upload Gagal.";
+                        alert("Gagal: " + data.pesan);
+                    }
+                    resetUploadUI();
+                })
+                .catch(error => {
+                    console.error('API Error:', error);
+                    statusText.style.color = "#ef4444";
+                    statusText.innerText = "Kesalahan Server/Jaringan.";
+                    alert("Koneksi terputus. Pastikan URL Apps Script sudah benar dan jaringan stabil.");
+                    resetUploadUI();
+                });
+            };
+            
+            // Trigger Pembacaan
+            reader.readAsDataURL(fileInput);
+        }
+
+        // Kembalikan Tombol ke Semula
+        function resetUploadUI() {
+            const btnUpload = document.getElementById('btn-upload');
+            btnUpload.disabled = false;
+            btnUpload.innerText = "Upload ke Server";
+            setTimeout(() => { document.getElementById('status-text').innerText = ""; }, 5000); // Hilangkan teks status setelah 5 detik
+        }
+    </script>
+</body>
+</html>
